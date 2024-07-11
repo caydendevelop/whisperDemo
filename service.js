@@ -28,7 +28,7 @@ const getPythonInterpreter = () => {
       throw new Error('Python is not installed or not found in PATH');
     }
   }
-}
+};
 
 // Function to transcribe audio file using Whisper
 const transcribeAudio = (filePath, callback) => {
@@ -42,11 +42,11 @@ const transcribeAudio = (filePath, callback) => {
   let errorData = '';
 
   pythonProcess.stdout.on('data', (data) => {
-    outputData += data.toString();
+    outputData += data.toString('utf8');
   });
 
   pythonProcess.stderr.on('data', (data) => {
-    errorData += data.toString();
+    errorData += data.toString('utf8');
   });
 
   pythonProcess.on('close', (code) => {
