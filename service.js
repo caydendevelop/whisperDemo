@@ -1,7 +1,6 @@
-const { spawn } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+const { spawn, execSync } = require('child_process');
 const sqlite3 = require('sqlite3').verbose();
+const fs = require('fs');
 
 // Initialize SQLite database
 const db = new sqlite3.Database('mydatabase.db', (err) => {
@@ -13,12 +12,31 @@ const db = new sqlite3.Database('mydatabase.db', (err) => {
 
 // Function to clean the output data
 const cleanOutputData = (data) => {
-  return data.replace(/[^a-zA-Z0-9\s]/g, '');
+  return data.replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ\s]/g, '').trim();
 };
+
+// Function to determine the Python interpreter
+const getPythonInterpreter = () => {
+  try {
+    execSync('python --version');
+    return 'python';
+  } catch (e) {
+    try {
+      execSync('python3 --version');
+      return 'python3';
+    } catch (e) {
+      throw new Error('Python is not installed or not found in PATH');
+    }
+  }
+}
 
 // Function to transcribe audio file using Whisper
 const transcribeAudio = (filePath, callback) => {
-  const pythonProcess = spawn('python3', ['whisper_transcribe.py', filePath]);
+  const pythonInterpreter = getPythonInterpreter();
+  const pythonProcess = spawn(pythonInterpreter, [
+    'whisper_transcribe.py',
+    filePath,
+  ]);
 
   let outputData = '';
   let errorData = '';
@@ -47,10 +65,16 @@ const transcribeAudio = (filePath, callback) => {
 
 // Function to query the database
 const queryDatabase = (queryStr, callback) => {
-  console.log('Keyword: ', queryStr);
+  const words = queryStr.split(' ').map((word) => `%${word}%`);
+  const placeholders = words
+    .map(
+      (word) =>
+        '(company_name COLLATE NOCASE LIKE ? OR company_number COLLATE NOCASE LIKE ?)',
+    )
+    .join(' OR ');
 
-  const sql = `SELECT company_name, company_number FROM test_table_1 WHERE company_name COLLATE NOCASE LIKE ? OR company_number COLLATE NOCASE LIKE ?`;
-  const params = [`%${queryStr}%`, `%${queryStr}%`];
+  const sql = `SELECT company_name, company_number FROM test_table_1 WHERE ${placeholders}`;
+  const params = [].concat(...words.map((word) => [word, word]));
 
   db.all(sql, params, (err, rows) => {
     if (err) {

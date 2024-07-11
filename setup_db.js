@@ -1,33 +1,76 @@
 const sqlite3 = require('sqlite3').verbose();
+const fs = require('fs');
+const path = require('path');
 
 // Connect to the SQLite database
 let db = new sqlite3.Database('mydatabase.db', (err) => {
   if (err) {
-    console.error(err.message);
+    console.error('Error opening database:', err.message);
+  } else {
+    console.log('Connected to the SQLite database.');
+    createTableAndInsertData();
   }
-  console.log('Connected to the SQLite database.');
 });
 
-// Create table
-db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS test_table_1 (
-        id INTEGER PRIMARY KEY,
-        company_name TEXT NOT NULL,
-        company_number TEXT NOT NULL
-    )`);
+function createTableAndInsertData() {
+  db.serialize(() => {
+    // Create table
+    db.run(
+      `CREATE TABLE IF NOT EXISTS test_table_1 (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          company_name TEXT NOT NULL,
+          company_number TEXT NOT NULL
+      )`,
+      (err) => {
+        if (err) {
+          console.error('Error creating table:', err.message);
+          closeDatabase();
+          return;
+        }
+        console.log('Table created or already exists.');
 
-  // Insert demo data
-  db.run(
-    `INSERT INTO test_table_1 (company_name, company_number) VALUES ('Demo Company', '123456')`,
-  );
-  db.run(
-    `INSERT INTO test_table_1 (company_name, company_number) VALUES ('Another Company', '654321')`,
-  );
-});
+        // Read SQL insert statements from the file
+        const sqlFilePath = path.join(__dirname, 'insert_statements.sql');
+        const insertStatements = fs.readFileSync(sqlFilePath, 'utf-8');
 
-db.close((err) => {
-  if (err) {
-    console.error(err.message);
-  }
-  console.log('Closed the database connection.');
-});
+        // Execute the insert statements in a transaction
+        db.exec('BEGIN TRANSACTION;', (err) => {
+          if (err) {
+            console.error('Error starting transaction:', err.message);
+            closeDatabase();
+            return;
+          }
+
+          db.exec(insertStatements, (err) => {
+            if (err) {
+              console.error('Error executing insert statements:', err.message);
+              closeDatabase();
+              return;
+            }
+
+            db.exec('COMMIT;', (err) => {
+              if (err) {
+                console.error('Error committing transaction:', err.message);
+                closeDatabase();
+                return;
+              }
+
+              console.log('Insert statements executed successfully.');
+              closeDatabase();
+            });
+          });
+        });
+      },
+    );
+  });
+}
+
+function closeDatabase() {
+  db.close((err) => {
+    if (err) {
+      console.error('Error closing database:', err.message);
+    } else {
+      console.log('Closed the database connection.');
+    }
+  });
+}

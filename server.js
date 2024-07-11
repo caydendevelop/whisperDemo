@@ -1,8 +1,10 @@
 const express = require('express');
 const multer = require('multer');
+const path = require('path');
 const { transcribeAudio, queryDatabase } = require('./service');
 
 const app = express();
+const PORT = process.env.PORT || 3068;
 
 // Utility function to create a standardized response
 const createResponse = (respCode, body, message, originalString = null) => {
@@ -16,7 +18,7 @@ const createResponse = (respCode, body, message, originalString = null) => {
 
 // Configure Multer to accept specific file types
 const fileFilter = (req, file, cb) => {
-  console.log('Uploaded MIME type: ', file.mimetype); // Print the MIME type
+  console.log('MIME type:', file.mimetype); // Print the MIME type
   const allowedMimeTypes = [
     'audio/m4a',
     'audio/x-m4a',
@@ -88,7 +90,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 });
 
 app.get('/api/query', (req, res) => {
-  const queryStr = req.query.keyword;
+  const queryStr = req.query.q;
 
   if (!queryStr) {
     return res
@@ -120,7 +122,6 @@ app.get('/api/query', (req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 3068;
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
 });
