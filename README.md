@@ -49,6 +49,7 @@ The project also requires some npm libraries, which we will install via npm.
     ```bash
     pip install torch torchvision torchaudio
     pip install openai-whisper
+    pip install pydub
     ```
     
 6. **Install NPM Libraries**:
@@ -141,6 +142,7 @@ The project also requires some npm libraries, which we will install via npm.
     ```
     pip install torch torchvision torchaudio
     pip install openai-whisper
+    pip install pydub
     ```
     
 7. **Install NPM Libraries**:
@@ -174,9 +176,10 @@ powershell -Command "Invoke-WebRequest -Uri 'https://www.sqlite.org/2021/sqlite-
 powershell -Command "Expand-Archive -Path 'sqlite-tools-win32-x86-3360000.zip' -DestinationPath 'C:\sqlite' -Force"
 setx /M PATH "C:\sqlite;%PATH%"
 
-REM Install PyTorch and Whisper
+REM Install PyTorch and Whisper and Pydub
 pip install torch torchvision torchaudio
 pip install openai-whisper
+pip install pydub
 
 REM Install NPM libraries
 npm install express multer sqlite3 child_process

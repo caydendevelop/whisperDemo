@@ -1,4 +1,4 @@
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const sqlite3 = require('sqlite3').verbose();
@@ -16,9 +16,28 @@ const cleanOutputData = (data) => {
   return data.replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ\s]/g, '').trim();
 };
 
+// Function to determine the Python interpreter
+const getPythonInterpreter = () => {
+  try {
+    execSync('python --version');
+    return 'python';
+  } catch (e) {
+    try {
+      execSync('python3 --version');
+      return 'python3';
+    } catch (e) {
+      throw new Error('Python is not installed or not found in PATH');
+    }
+  }
+};
+
 // Function to transcribe audio file using Whisper
 const transcribeAudio = (filePath, callback) => {
-  const pythonProcess = spawn('python3', ['whisper_transcribe.py', filePath]);
+  const pythonInterpreter = getPythonInterpreter();
+  const pythonProcess = spawn(pythonInterpreter, [
+    'whisper_transcribe.py',
+    filePath,
+  ]);
 
   let outputData = '';
   let errorData = '';
@@ -76,6 +95,7 @@ const queryDatabase = (joinedSegments, callback) => {
     if (err) {
       return callback(err);
     }
+    console.log('Query executed successfully. Rows:', rows);
     callback(null, rows);
   });
 };
