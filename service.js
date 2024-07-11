@@ -13,7 +13,7 @@ const db = new sqlite3.Database('mydatabase.db', (err) => {
 
 // Function to clean the output data
 const cleanOutputData = (data) => {
-  return data.replace(/[^a-zA-Z0-9\s]/g, '');
+  return data.replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ\s]/g, '').trim();
 };
 
 // Function to transcribe audio file using Whisper
@@ -39,18 +39,38 @@ const transcribeAudio = (filePath, callback) => {
       return callback(new Error(`Error processing file: ${errorData}`));
     }
 
-    // Clean the output data
-    const cleanedOutput = cleanOutputData(outputData);
-    callback(null, cleanedOutput);
+    try {
+      // Parse and clean the output data
+      const transcriptions = JSON.parse(outputData).map(cleanOutputData);
+      callback(null, transcriptions);
+    } catch (err) {
+      callback(
+        new Error(`Failed to parse transcription output: ${err.message}`),
+      );
+    }
   });
 };
 
 // Function to query the database
-const queryDatabase = (queryStr, callback) => {
-  console.log('Keyword: ', queryStr);
+const queryDatabase = (joinedSegments, callback) => {
+  console.log('joinedSegments: ', joinedSegments, '\n\n');
 
-  const sql = `SELECT company_name, company_number FROM test_table_1 WHERE company_name COLLATE NOCASE LIKE ? OR company_number COLLATE NOCASE LIKE ?`;
-  const params = [`%${queryStr}%`, `%${queryStr}%`];
+  const words = joinedSegments.split(', ').map((word) => `%${word}%`);
+  console.log('words: ', words, '\n\n');
+
+  const placeholders = words
+    .map(
+      () =>
+        '(company_name COLLATE NOCASE LIKE ? OR company_number COLLATE NOCASE LIKE ?)',
+    )
+    .join(' OR ');
+  console.log('placeholders: ', placeholders, '\n\n');
+
+  const sql = `SELECT company_name, company_number FROM test_table_1 WHERE ${placeholders}`;
+  console.log('SQL Query is: ', sql, '\n\n');
+
+  const params = [].concat(...words.map((word) => [word, word]));
+  console.log('params: ', params, '\n\n');
 
   db.all(sql, params, (err, rows) => {
     if (err) {

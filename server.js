@@ -4,6 +4,9 @@ const { transcribeAudio, queryDatabase } = require('./service');
 
 const app = express();
 
+// Middleware to parse JSON bodies
+app.use(express.json());
+
 // Utility function to create a standardized response
 const createResponse = (respCode, body, message, originalString = null) => {
   return {
@@ -46,28 +49,33 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 
   const filePath = req.file.path;
 
-  transcribeAudio(filePath, (err, result) => {
+  transcribeAudio(filePath, (err, segments) => {
     if (err) {
       return res.status(500).json(createResponse(-1, null, err.message));
     }
 
-    // Trim spaces from the result
-    result = result.trim();
+    // Join segments with commas
+    const joinedSegments = segments.join(', ');
 
     // Check if the transcription result is null or empty
-    if (!result || result === '') {
+    if (!joinedSegments || joinedSegments === '') {
       return res
         .status(500)
         .json(createResponse(-1, null, 'Transcription result is empty'));
     }
 
-    // Call queryDatabase with the transcription result
-    queryDatabase(result, (err, rows) => {
+    // Call queryDatabase with the joined transcription result
+    queryDatabase(joinedSegments, (err, rows) => {
       if (err) {
         return res
           .status(500)
           .json(
-            createResponse(-1, null, `Database error: ${err.message}`, result),
+            createResponse(
+              -1,
+              null,
+              `Database error: ${err.message}`,
+              joinedSegments,
+            ),
           );
       }
 
@@ -76,25 +84,33 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
           createResponse(
             0,
             rows,
-            `${result} is not found in the database`,
-            result,
+            `${joinedSegments} is not found in the database`,
+            joinedSegments,
           ),
         );
       }
 
-      res.json(createResponse(0, rows, 'Success!', result));
+      res.json(createResponse(0, rows, 'Success!', joinedSegments));
     });
   });
 });
 
-app.get('/api/query', (req, res) => {
-  const queryStr = req.query.keyword;
+app.post('/api/query', (req, res) => {
+  const queryList = req.body.keywordsList;
 
-  if (!queryStr) {
+  if (!queryList || !Array.isArray(queryList)) {
     return res
       .status(400)
-      .json(createResponse(-1, null, 'No query string provided'));
+      .json(
+        createResponse(
+          -1,
+          null,
+          'No query list provided or it is not an array',
+        ),
+      );
   }
+
+  const queryStr = queryList.join(', ');
 
   queryDatabase(queryStr, (err, rows) => {
     if (err) {

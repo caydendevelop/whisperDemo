@@ -1,17 +1,23 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Upload Voice File</title>
+  </head>
 
-<head>
-  <meta charset="UTF-8">
-  <title>Upload Voice File</title>
-</head>
-
-<body>
-  <h1>Upload Voice File</h1>
-  <form action="http://localhost:3068/api/upload" method="post" enctype="multipart/form-data">
-    <input type="file" name="file" accept=".m4a, .mp3, .webm, .mp4, .mpga, .wav, .mpeg">
-    <button type="submit">Upload</button>
-  </form>
-</body>
-
+  <body>
+    <h1>Upload Voice File</h1>
+    <form
+      action="http://localhost:3068/api/upload"
+      method="post"
+      enctype="multipart/form-data"
+    >
+      <input
+        type="file"
+        name="file"
+        accept=".m4a, .mp3, .webm, .mp4, .mpga, .wav, .mpeg"
+      />
+      <button type="submit">Upload</button>
+    </form>
+  </body>
 </html>
